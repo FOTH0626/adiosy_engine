@@ -22,10 +22,11 @@ elseif(UNIX)
         add_definitions(-DAD_ENGINE_PLATFORM_LINUX)
     endif()
 else()
-    message("Platform: Unsopported")
+    message("Platform: Unsupported")
 endif()
 
 include_directories(Platform/Public)
+include_directories(Core/Public)
 
 add_subdirectory(Platform)
 add_subdirectory(Core)
