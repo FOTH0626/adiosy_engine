@@ -16,6 +16,7 @@ namespace ade {
         void PollEvents() override;
         void SwapBuffer() override;
 
+        GLFWwindow *GetWindowHandle() const {return mGLFWwindow;}
     private:
         GLFWwindow *mGLFWwindow;
     };
