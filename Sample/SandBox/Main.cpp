@@ -4,6 +4,8 @@
 #include "AdLog.h"
 #include "AdWindow.h"
 #include "AdGraphicContext.h"
+#include "Graphic/AdVKDevice.h"
+#include "Graphic/AdVKGraphicContext.h"
 
 int main(){
     std::cout << "Hello adiosy engine."<< std::endl;
@@ -18,6 +20,7 @@ int main(){
 
     std::unique_ptr<ade::AdWindow> window = ade::AdWindow::Create(800, 600, "SandBox");
     std::unique_ptr<ade::AdGraphicContext> graphicContext = ade::AdGraphicContext::Create(window.get());
+    std::shared_ptr<ade::AdVKDevice> device = std::make_shared<ade::AdVKDevice>(dynamic_cast<ade::AdVKGraphicContext*>(graphicContext.get()), 1, 1);
 
     while (!window->ShouldClose()) {
         window->PollEvents();

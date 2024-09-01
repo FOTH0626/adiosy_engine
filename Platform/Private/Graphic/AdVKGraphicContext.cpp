@@ -4,7 +4,9 @@
 #include "GLFW/glfw3.h"
 #include "Graphic/AdVKCommon.h"
 #include "Window/AdGLFWwindow.h"
+#include <cmath>
 #include <unordered_set>
+#include <vulkan/vulkan_core.h>
 
 
 
@@ -23,11 +25,13 @@ namespace ade {
 #elif AD_ENGINE_PLATFORM_LINUX
         { VK_KHR_XCB_SURFACE_EXTENSION_NAME, true },
 #endif
+        //添加验证
         {VK_EXT_DEBUG_REPORT_EXTENSION_NAME, true}
     };
     AdVKGraphicContext::AdVKGraphicContext(AdWindow *window){
         CreateInstance();
         CreateSurface(window);
+        SelectPhyDevice();
     }
 
     AdVKGraphicContext::~AdVKGraphicContext(){
@@ -66,7 +70,6 @@ namespace ade {
             };
         }
         
-
 
         //构建拓展
         uint32_t availableExtensionCount;
@@ -150,5 +153,143 @@ namespace ade {
 
         CALL_VK(glfwCreateWindowSurface(mInstance, glfWwindow->GetWindowHandle(),nullptr,&mSurface));
         LOG_T("{0} : Surface : {1}",__FUNCTION__,(void*)mSurface);
+    }
+
+    void AdVKGraphicContext::SelectPhyDevice(){
+        uint32_t phyDeviceCount;
+        CALL_VK(vkEnumeratePhysicalDevices(mInstance,&phyDeviceCount,nullptr));
+        VkPhysicalDevice phyDevices[phyDeviceCount];
+        CALL_VK(vkEnumeratePhysicalDevices(mInstance, &phyDeviceCount, phyDevices));
+
+        uint32_t maxScore = 0;
+        int32_t maxScorePhyDeviceIndex = -1;
+        LOG_D("------------------------");
+        LOG_D("Physical devices: ");
+        for (int i = 0 ; i < phyDeviceCount; ++i) {
+            //log
+            VkPhysicalDeviceProperties props;
+            vkGetPhysicalDeviceProperties(phyDevices[i], &props);
+            PrintPhyDeviceInfo(props);
+
+            uint32_t score = GetPhyDeviceScore(props);
+            uint32_t formatCount;
+            VkSurfaceFormatKHR formats[formatCount];
+            CALL_VK(vkGetPhysicalDeviceSurfaceFormatsKHR(phyDevices[i], mSurface, &formatCount, formats));
+            for (int j = 0 ; j < formatCount; ++j) {
+              if (formats[j].format == VK_FORMAT_B8G8R8A8_UNORM && formats[j].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR) {
+                  score +=10;
+                  break;
+              }
+            }
+
+            
+
+            uint32_t queueFamilyCount;
+            vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, nullptr);
+            VkQueueFamilyProperties queueFamilys[queueFamilyCount];
+            vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, queueFamilys);
+            
+            LOG_D("score ---->   :{0}",score);
+            LOG_D("queue family  :{0}",queueFamilyCount);
+            if (score < maxScore) {
+              continue;
+            }
+            
+            
+            for(int j = 0; j <queueFamilyCount; ++j){
+              if (queueFamilys[j].queueCount == 0) {
+                continue;
+              }
+
+            //1.graphic family
+              if (queueFamilys[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                mGraphicQueueFamily.queueFamilyIndex = j;
+                mGraphicQueueFamily.queueFamilyCount = queueFamilys[j].queueCount;
+              }
+
+              if (mGraphicQueueFamily.queueFamilyIndex >= 0 && mPresentQueueFamily.queueFamilyIndex >= 0
+              && mGraphicQueueFamily.queueFamilyIndex != mPresentQueueFamily.queueFamilyIndex) {
+                break;  
+              }
+            //2.present family
+              VkBool32 bSupportSurface;
+              vkGetPhysicalDeviceSurfaceSupportKHR(phyDevices[i], j, mSurface, &bSupportSurface);
+              if(bSupportSurface){
+                mPresentQueueFamily.queueFamilyIndex = j;
+                mPresentQueueFamily.queueFamilyCount = queueFamilys[j].queueCount;
+              }
+            }
+
+          
+          if (mGraphicQueueFamily.queueFamilyIndex >=0 && mPresentQueueFamily.queueFamilyIndex >=0) {
+            maxScorePhyDeviceIndex = i ;
+            maxScore = score;
+          }
+        }
+        LOG_D("------------------------");
+
+        
+        if (maxScorePhyDeviceIndex < 0) {
+          LOG_W("Maybe can not find a suitable physical device ,will 0.");
+          maxScorePhyDeviceIndex = 0;
+        }
+
+        mPhyDevice = phyDevices[maxScorePhyDeviceIndex];
+        vkGetPhysicalDeviceMemoryProperties(mPhyDevice, &mPhyDeviceMemoryProperties);
+        LOG_T("{0} : physical device:{1},score:{2}, graphic queue:{3}:{4},present queue:{5} : {6}",__FUNCTION__,
+                maxScorePhyDeviceIndex,maxScore,
+                mGraphicQueueFamily.queueFamilyIndex,mGraphicQueueFamily.queueFamilyCount,
+                mPresentQueueFamily.queueFamilyIndex,mPresentQueueFamily.queueFamilyCount);
+        
+    }
+
+    void AdVKGraphicContext::PrintPhyDeviceInfo(VkPhysicalDeviceProperties &props){
+
+        const char *deviceType = props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ? "intergrated gpu" :
+                                  props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ?  "discrete gpu" :
+                                  props.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU ?  "virtual gpu" : 
+                                  props.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU ? "cpu" : "Others";
+
+        uint32_t driverVersionMajor = VK_VERSION_MAJOR(props.driverVersion);
+        uint32_t driverVersionMinor = VK_VERSION_MINOR(props.driverVersion);
+        uint32_t driverVersionPatch = VK_VERSION_PATCH(props.driverVersion);
+
+        uint32_t apiVersionMajor = VK_VERSION_MAJOR(props.apiVersion);
+        uint32_t apiVersionMinor = VK_VERSION_MINOR(props.apiVersion);
+        uint32_t apiVersionPatch = VK_VERSION_PATCH(props.apiVersion);
+        
+
+        LOG_D("------------------------");
+        LOG_D("deviceName      : {0}",props.deviceName);
+        LOG_D("deviceType      : {0}",deviceType);
+        LOG_D("venderID        : {0}",props.vendorID);
+        LOG_D("deviceID        : {0}",props.deviceID);
+        LOG_D("driverVersion   : {0}.{1}.{2}",driverVersionMajor,driverVersionMinor,driverVersionPatch);
+        LOG_D("apiVersion      : {0}.{1}.{2}",apiVersionMajor,apiVersionMinor,apiVersionPatch);
+    }
+
+    uint32_t AdVKGraphicContext::GetPhyDeviceScore(VkPhysicalDeviceProperties &props){
+        VkPhysicalDeviceType deviceType = props.deviceType;
+        uint32_t score = 0;
+        switch (deviceType) {
+            case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+              break;
+            case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+              score += 30;
+              break;
+            case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+              score += 40;
+              break;
+            case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+              score +=20;
+              break;
+            case VK_PHYSICAL_DEVICE_TYPE_CPU:
+              score +=10;
+              break;
+            case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
+              break;
+        }
+
+        return score;
     }
 }

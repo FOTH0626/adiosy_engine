@@ -7,6 +7,8 @@ add_library(adiosy_platform
     
     Private/AdGraphicContext.cpp
     Private/Graphic/AdVKGraphicContext.cpp
+    Private/Graphic/AdVKDevice.cpp
+    Private/Graphic/AdVKQueue.cpp
     )
 
 
@@ -26,6 +28,6 @@ find_package(Vulkan REQUIRED)
 if(Vulkan_FOUND)
     message("--->Find Vulkan success:${Vulkan_INCLUDE_DIRS}")
 endif()
-target_include_directories(adiosy_platform PRIVATE ${Vulkan_INCLUDE_DIRS})
+target_include_directories(adiosy_platform PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(adiosy_platform PRIVATE ${Vulkan_LIBRARY})
 
