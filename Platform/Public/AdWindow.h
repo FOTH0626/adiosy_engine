@@ -10,7 +10,7 @@ namespace ade {
         AdWindow &operator=(const AdWindow&) = delete;
         virtual ~AdWindow() = default;
 
-        static std::unique_ptr<AdWindow> Create(uint32_t width,uint32_t height, const char* title);
+        static std::unique_ptr<AdWindow> Create(std::uint32_t width,std::uint32_t height, const char* title);
 
         virtual bool ShouldClose() =0 ;
         virtual void PollEvents() =0 ;

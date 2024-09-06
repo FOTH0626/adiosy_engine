@@ -9,6 +9,10 @@ add_library(adiosy_platform
     Private/Graphic/AdVKGraphicContext.cpp
     Private/Graphic/AdVKDevice.cpp
     Private/Graphic/AdVKQueue.cpp
+    Private/Graphic/AdVkSwapChain.cpp
+    Private/Graphic/AdVKRenderPass.cpp
+    Private/Graphic/AdVKFrameBuffer.cpp
+    Private/Graphic/AdVKImageView.cpp
     )
 
 

@@ -9,7 +9,7 @@ namespace ade {
     class AdGLFWwindow : public AdWindow{
     public:
         AdGLFWwindow() = delete;
-        AdGLFWwindow(uint32_t width, uint32_t height, const char *title);
+        AdGLFWwindow(std::uint32_t width, std::uint32_t height, const char *title);
         ~AdGLFWwindow() override;
         
         bool ShouldClose() override;

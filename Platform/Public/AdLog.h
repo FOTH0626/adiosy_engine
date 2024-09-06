@@ -1,33 +1,43 @@
 #ifndef ADLOG_H
 #define ADLOG_H
 
-#include "AdEngine.h"
 
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-#include "spdlog/spdlog.h"
+#include "spdlog/common.h"
 
-namespace ade {
+
+namespace ade {  
     class AdLog{
     public:
         AdLog() = delete;
         AdLog(const AdLog&) = delete;
         AdLog &operator=(const AdLog&) = delete;
 
-
         static void Init();
-        static spdlog::logger* GetLoggerInstance(){
-            assert(sLoggerInstance && "Logger instance is null, maybe you hace not execute AdLog::Init()");
-            return sLoggerInstance.get();
+        static AdLog* GetLoggerInstance(){
+            return &sLoggerInstance;
+        }   
+
+        template<typename... Args>
+        void Log(spdlog::source_loc loc, spdlog::level::level_enum lvl ,spdlog::format_string_t<Args...> fmt, Args &&...args){
+            spdlog::memory_buf_t buf;
+            fmt::vformat_to(fmt::appender(buf), fmt, fmt::make_format_args(args...));
+            Log(loc, lvl, buf);
         }
+
     private:
-        static std::shared_ptr<spdlog::logger> sLoggerInstance;
+        void Log(spdlog::source_loc loc, spdlog::level::level_enum lvl, const spdlog::memory_buf_t  &buffer);
+
+        static AdLog sLoggerInstance;
     };
 
-#define LOG_T(...) SPDLOG_LOGGER_TRACE(ade::AdLog::GetLoggerInstance(),__VA_ARGS__)
-#define LOG_D(...) SPDLOG_LOGGER_DEBUG(ade::AdLog::GetLoggerInstance(),__VA_ARGS__)
-#define LOG_I(...) SPDLOG_LOGGER_INFO(ade::AdLog::GetLoggerInstance(),__VA_ARGS__)
-#define LOG_W(...) SPDLOG_LOGGER_WARN(ade::AdLog::GetLoggerInstance(),__VA_ARGS__)
-#define LOG_E(...) SPDLOG_LOGGER_ERROR(ade::AdLog::GetLoggerInstance(),__VA_ARGS__)
+#define AD_LOG_LOGGER_CALL(adLog, level, ...)\
+        (adLog)->Log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, level, __VA_ARGS__)
+
+#define LOG_T(...) AD_LOG_LOGGER_CALL(ade::AdLog::GetLoggerInstance(), spdlog::level::trace, __VA_ARGS__)
+#define LOG_D(...) AD_LOG_LOGGER_CALL(ade::AdLog::GetLoggerInstance(), spdlog::level::debug, __VA_ARGS__)
+#define LOG_I(...) AD_LOG_LOGGER_CALL(ade::AdLog::GetLoggerInstance(), spdlog::level::info, __VA_ARGS__)
+#define LOG_W(...) AD_LOG_LOGGER_CALL(ade::AdLog::GetLoggerInstance(), spdlog::level::warn, __VA_ARGS__)
+#define LOG_E(...) AD_LOG_LOGGER_CALL(ade::AdLog::GetLoggerInstance(), spdlog::level::err, __VA_ARGS__)
 
 
 

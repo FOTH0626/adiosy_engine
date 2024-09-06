@@ -2,14 +2,13 @@
 #define AD_VK_GRAPHIC_CONTEXT_H
 
 #include "AdGraphicContext.h"
-#include "AdVKCommon.h"
 #include "AdWindow.h"
 #include <vulkan/vulkan_core.h>
 
 namespace ade {
     struct QueueFamilyInfo{
         int32_t queueFamilyIndex = -1;
-        uint32_t queueFamilyCount;
+        std::uint32_t queueFamilyCount;
     };
 
     class AdVKGraphicContext:public AdGraphicContext{
@@ -27,7 +26,7 @@ namespace ade {
 
     private:
         static void PrintPhyDeviceInfo(VkPhysicalDeviceProperties &props);
-        static uint32_t GetPhyDeviceScore(VkPhysicalDeviceProperties &props);
+        static std::uint32_t GetPhyDeviceScore(VkPhysicalDeviceProperties &props);
 
         void CreateInstance();
         void CreateSurface(AdWindow *window);

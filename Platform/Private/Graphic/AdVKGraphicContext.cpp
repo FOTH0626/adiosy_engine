@@ -6,6 +6,7 @@
 #include "Window/AdGLFWwindow.h"
 #include <cmath>
 #include <unordered_set>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 
@@ -56,15 +57,15 @@ namespace ade {
 
     void AdVKGraphicContext::CreateInstance(){
         //获取layers
-        uint32_t availableLayerCount;
+        std::uint32_t availableLayerCount;
         CALL_VK(vkEnumerateInstanceLayerProperties(&availableLayerCount,nullptr));
-        VkLayerProperties availableLayers[availableLayerCount];
-        CALL_VK(vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers));
+        std::vector<VkLayerProperties> availableLayers{availableLayerCount};
+        CALL_VK(vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data()));
 
-        uint32_t enableLayerCount = 0;
+        std::uint32_t enableLayerCount = 0;
         const char* enableLayers[32];
         if (bShouldValidate) {
-            if(!checkDeviceFeatures("Instance Layers:", false, availableLayerCount, availableLayers, 
+            if(!checkDeviceFeatures("Instance Layers:", false, availableLayerCount, availableLayers.data(), 
         ARRAY_SIZE(requestedLayers), requestedLayers, &enableLayerCount, enableLayers)){
                 return;
             };
@@ -72,12 +73,12 @@ namespace ade {
         
 
         //构建拓展
-        uint32_t availableExtensionCount;
+        std::uint32_t availableExtensionCount;
         CALL_VK(vkEnumerateInstanceExtensionProperties("",&availableExtensionCount,nullptr));
-        VkExtensionProperties availableExtensions[availableExtensionCount];
-        CALL_VK(vkEnumerateInstanceExtensionProperties("",&availableExtensionCount, availableExtensions));
+        std::vector<VkExtensionProperties> availableExtensions{availableExtensionCount};
+        CALL_VK(vkEnumerateInstanceExtensionProperties("",&availableExtensionCount, availableExtensions.data()));
 
-        uint32_t glfwRequestedExtensionCount;
+        std::uint32_t glfwRequestedExtensionCount;
         const char** glfwRequestedExtensions = glfwGetRequiredInstanceExtensions(&glfwRequestedExtensionCount);
         std::unordered_set<const char*> allRequestedExtensionSet;
         std::vector<DeviceFeature> allRequestedExtensions;
@@ -95,9 +96,9 @@ namespace ade {
             }
         }
 
-        uint32_t enableExtensionCount;
+        std::uint32_t enableExtensionCount;
         const char* enableExtensions[32];
-        if(!checkDeviceFeatures("Instance Extension:", true, availableExtensionCount, availableExtensions, 
+        if(!checkDeviceFeatures("Instance Extension:", true, availableExtensionCount, availableExtensions.data(), 
         allRequestedExtensions.size(), allRequestedExtensions.data(), &enableExtensionCount, enableExtensions)){
             
             return;
@@ -156,12 +157,12 @@ namespace ade {
     }
 
     void AdVKGraphicContext::SelectPhyDevice(){
-        uint32_t phyDeviceCount;
+        std::uint32_t phyDeviceCount;
         CALL_VK(vkEnumeratePhysicalDevices(mInstance,&phyDeviceCount,nullptr));
-        VkPhysicalDevice phyDevices[phyDeviceCount];
-        CALL_VK(vkEnumeratePhysicalDevices(mInstance, &phyDeviceCount, phyDevices));
+        std::vector<VkPhysicalDevice> phyDevices{phyDeviceCount};
+        CALL_VK(vkEnumeratePhysicalDevices(mInstance, &phyDeviceCount, phyDevices.data()));
 
-        uint32_t maxScore = 0;
+        std::uint32_t maxScore = 0;
         int32_t maxScorePhyDeviceIndex = -1;
         LOG_D("------------------------");
         LOG_D("Physical devices: ");
@@ -171,10 +172,11 @@ namespace ade {
             vkGetPhysicalDeviceProperties(phyDevices[i], &props);
             PrintPhyDeviceInfo(props);
 
-            uint32_t score = GetPhyDeviceScore(props);
-            uint32_t formatCount;
-            VkSurfaceFormatKHR formats[formatCount];
-            CALL_VK(vkGetPhysicalDeviceSurfaceFormatsKHR(phyDevices[i], mSurface, &formatCount, formats));
+            std::uint32_t score = GetPhyDeviceScore(props);
+            std::uint32_t formatCount;            
+            CALL_VK(vkGetPhysicalDeviceSurfaceFormatsKHR(phyDevices[i], mSurface, &formatCount, nullptr));
+            std::vector<VkSurfaceFormatKHR> formats{formatCount};
+            CALL_VK(vkGetPhysicalDeviceSurfaceFormatsKHR(phyDevices[i], mSurface, &formatCount, formats.data()));
             for (int j = 0 ; j < formatCount; ++j) {
               if (formats[j].format == VK_FORMAT_B8G8R8A8_UNORM && formats[j].colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR) {
                   score +=10;
@@ -184,10 +186,10 @@ namespace ade {
 
             
 
-            uint32_t queueFamilyCount;
+            std::uint32_t queueFamilyCount;
             vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, nullptr);
-            VkQueueFamilyProperties queueFamilys[queueFamilyCount];
-            vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, queueFamilys);
+            std::vector<VkQueueFamilyProperties> queueFamilys{queueFamilyCount};
+            vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, queueFamilys.data());
             
             LOG_D("score ---->   :{0}",score);
             LOG_D("queue family  :{0}",queueFamilyCount);
@@ -196,7 +198,7 @@ namespace ade {
             }
             
             
-            for(int j = 0; j <queueFamilyCount; ++j){
+            for(int j = 0; j < queueFamilyCount; ++j){
               if (queueFamilys[j].queueCount == 0) {
                 continue;
               }
@@ -250,13 +252,13 @@ namespace ade {
                                   props.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU ?  "virtual gpu" : 
                                   props.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU ? "cpu" : "Others";
 
-        uint32_t driverVersionMajor = VK_VERSION_MAJOR(props.driverVersion);
-        uint32_t driverVersionMinor = VK_VERSION_MINOR(props.driverVersion);
-        uint32_t driverVersionPatch = VK_VERSION_PATCH(props.driverVersion);
+        std::uint32_t driverVersionMajor = VK_VERSION_MAJOR(props.driverVersion);
+        std::uint32_t driverVersionMinor = VK_VERSION_MINOR(props.driverVersion);
+        std::uint32_t driverVersionPatch = VK_VERSION_PATCH(props.driverVersion);
 
-        uint32_t apiVersionMajor = VK_VERSION_MAJOR(props.apiVersion);
-        uint32_t apiVersionMinor = VK_VERSION_MINOR(props.apiVersion);
-        uint32_t apiVersionPatch = VK_VERSION_PATCH(props.apiVersion);
+        std::uint32_t apiVersionMajor = VK_VERSION_MAJOR(props.apiVersion);
+        std::uint32_t apiVersionMinor = VK_VERSION_MINOR(props.apiVersion);
+        std::uint32_t apiVersionPatch = VK_VERSION_PATCH(props.apiVersion);
         
 
         LOG_D("------------------------");
@@ -268,9 +270,9 @@ namespace ade {
         LOG_D("apiVersion      : {0}.{1}.{2}",apiVersionMajor,apiVersionMinor,apiVersionPatch);
     }
 
-    uint32_t AdVKGraphicContext::GetPhyDeviceScore(VkPhysicalDeviceProperties &props){
+    std::uint32_t AdVKGraphicContext::GetPhyDeviceScore(VkPhysicalDeviceProperties &props){
         VkPhysicalDeviceType deviceType = props.deviceType;
-        uint32_t score = 0;
+        std::uint32_t score = 0;
         switch (deviceType) {
             case VK_PHYSICAL_DEVICE_TYPE_OTHER:
               break;

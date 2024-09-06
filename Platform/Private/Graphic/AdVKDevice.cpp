@@ -19,8 +19,8 @@ namespace ade {
 #endif
     };    
     
-    AdVKDevice::AdVKDevice(AdVKGraphicContext *context, uint32_t graphicQueueCount, uint32_t presentQueueCount,
-                            const AdVkSettings &settings){
+    AdVKDevice::AdVKDevice(AdVKGraphicContext *context, std::uint32_t graphicQueueCount, std::uint32_t presentQueueCount,
+                            const AdVkSettings &settings):mSettings(settings){
       if(!context){
         LOG_E("Must create a vulkan grahpic context before create device.");
         return;
@@ -43,7 +43,7 @@ namespace ade {
 
       bool bSameQueueFamilyIndex = context->IsSameGraphicPresentQueueFamily();
 
-      uint32_t sameQueueCount = graphicQueueCount;
+      std::uint32_t sameQueueCount = graphicQueueCount;
       if (bSameQueueFamilyIndex) {
         sameQueueCount += presentQueueCount;
         if (sameQueueCount < graphicQueueFamilyInfo.queueFamilyCount) {
@@ -54,14 +54,14 @@ namespace ade {
     // VkStructureType             sType;
     // const void*                 pNext;
     // VkDeviceQueueCreateFlags    flags;
-    // uint32_t                    queueFamilyIndex;
-    // uint32_t                    queueCount;
+    // std::uint32_t                    queueFamilyIndex;
+    // std::uint32_t                    queueCount;
     // const float*                pQueuePriorities;
       VkDeviceQueueCreateInfo queueInfos[2] = {
     { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .queueFamilyIndex = static_cast<uint32_t>(graphicQueueFamilyInfo.queueFamilyIndex),
+        .queueFamilyIndex = static_cast<std::uint32_t>(graphicQueueFamilyInfo.queueFamilyIndex),
         .queueCount = sameQueueCount,
         .pQueuePriorities = graphicQueuePriorities.data()
         }
@@ -72,7 +72,7 @@ namespace ade {
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .queueFamilyIndex = static_cast<uint32_t>(presentQueueFamilyInfo.queueFamilyIndex),
+        .queueFamilyIndex = static_cast<std::uint32_t>(presentQueueFamilyInfo.queueFamilyIndex),
         .queueCount = presentQueueCount,
         .pQueuePriorities = presentQueuePriorities.data()
         };
@@ -80,19 +80,19 @@ namespace ade {
     // VkStructureType                    sType;
     // const void*                        pNext;
     // VkDeviceCreateFlags                flags;
-    // uint32_t                           queueCreateInfoCount;
+    // std::uint32_t                           queueCreateInfoCount;
     // const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
-    // uint32_t                           enabledLayerCount;
+    // std::uint32_t                           enabledLayerCount;
     // const char* const*                 ppEnabledLayerNames;
-    // uint32_t                           enabledExtensionCount;
+    // std::uint32_t                           enabledExtensionCount;
     // const char* const*                 ppEnabledExtensionNames;
     // const VkPhysicalDeviceFeatures*    pEnabledFeatures;
 
-        uint32_t availableExtensionCount;
+        std::uint32_t availableExtensionCount;
         CALL_VK(vkEnumerateDeviceExtensionProperties(context->GetPhyDevice(), "", &availableExtensionCount, nullptr));
         VkExtensionProperties availableExtensions[availableExtensionCount];
         CALL_VK(vkEnumerateDeviceExtensionProperties(context->GetPhyDevice(),"",&availableExtensionCount,availableExtensions));
-        uint32_t enableExtensionCount;
+        std::uint32_t enableExtensionCount;
         
         
         const char* enableExtensions[32];
@@ -107,7 +107,7 @@ namespace ade {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .queueCreateInfoCount = static_cast<uint32_t>(bSameQueueFamilyIndex ? 1:2),
+        .queueCreateInfoCount = static_cast<std::uint32_t>(bSameQueueFamilyIndex ? 1:2),
         .pQueueCreateInfos = queueInfos,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = nullptr,
@@ -115,25 +115,25 @@ namespace ade {
         .ppEnabledExtensionNames = enableExtensionCount > 0 ? enableExtensions : nullptr,
         .pEnabledFeatures = nullptr
       };
-      CALL_VK(vkCreateDevice(context->GetPhyDevice(), &deviceInfo, nullptr, &mDevice));
-      LOG_T("VkDevice: {0}",(void*)mDevice);
+      CALL_VK(vkCreateDevice(context->GetPhyDevice(), &deviceInfo, nullptr, &mHandle));
+      LOG_T("VkDevice: {0}",(void*)mHandle);
 
 
       for (int i =0 ; i < graphicQueueCount; ++i) {
         VkQueue queue;
-        vkGetDeviceQueue(mDevice,graphicQueueFamilyInfo.queueFamilyIndex,i, &queue);
+        vkGetDeviceQueue(mHandle,graphicQueueFamilyInfo.queueFamilyIndex,i, &queue);
         mGraphicQueues.push_back(std::make_shared<AdVKQueue>(graphicQueueFamilyInfo.queueFamilyIndex, i, queue, false));
       }
 
       for (int i =0 ; i < presentQueueCount; ++i) {
         VkQueue queue;
-        vkGetDeviceQueue(mDevice,presentQueueFamilyInfo.queueFamilyIndex,i, &queue);
+        vkGetDeviceQueue(mHandle,presentQueueFamilyInfo.queueFamilyIndex,i, &queue);
         mPresentQueues.push_back(std::make_shared<AdVKQueue>(presentQueueFamilyInfo.queueFamilyIndex, i, queue, true));
       }
 
     }
     AdVKDevice::~AdVKDevice(){
-        vkDeviceWaitIdle(mDevice);
-        vkDestroyDevice(mDevice, nullptr);
+        vkDeviceWaitIdle(mHandle);
+        vkDestroyDevice(mHandle, nullptr);
     }
 }

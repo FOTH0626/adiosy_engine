@@ -1,11 +1,10 @@
 #include "Window/AdGLFWwindow.h"
 #include "GLFW/glfw3.h"
-#include "GLFW/glfw3native.h"
 #include "AdLog.h"
 #include <GL/gl.h>
 
 namespace ade{
-    AdGLFWwindow::AdGLFWwindow(uint32_t width, uint32_t height, const char *title){
+    AdGLFWwindow::AdGLFWwindow(std::uint32_t width, std::uint32_t height, const char *title){
         if(!glfwInit()){
             LOG_E("Failed to init glfw.");
             return;
