@@ -12,7 +12,9 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+
 add_definitions(-DAD_DEFINE_RES_ROOT_DIR=\"${CMAKE_SOURCE_DIR}/Resource/\")
+set(AD_DEFINE_RES_ROOT_DIR "${CMAKE_SOURCE_DIR}/Resource/")
 
 if(WIN32)
     message("Platform:Windows")
@@ -28,6 +30,9 @@ elseif(UNIX)
 else()
     message("Platform: Unsupported")
 endif()
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(SPIR-V)
 
 include_directories(Platform/Public)
 include_directories(Core/Public)

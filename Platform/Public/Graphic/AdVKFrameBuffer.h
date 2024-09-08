@@ -4,6 +4,8 @@
 #include "Graphic/AdVKDevice.h"
 #include "Graphic/AdVKImageView.h"
 #include "Graphic/AdVKRenderPass.h"
+#include <cstdint>
+#include <vulkan/vulkan_core.h>
 
 
 namespace ade {
@@ -18,7 +20,9 @@ namespace ade {
 
       bool ReCreate(const std::vector<VkImage> &images, std::uint32_t width, std::uint32_t height);
 
-      
+      [[nodiscard]] VkFramebuffer GetHandle() const {return mHandle;}
+      [[nodiscard]] uint32_t GetWidth() const { return mWidth;}
+      [[nodiscard]] uint32_t GetHeight() const { return mHeight;}
 
     private:
       VkFramebuffer mHandle = VK_NULL_HANDLE;

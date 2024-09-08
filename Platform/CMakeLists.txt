@@ -13,6 +13,8 @@ add_library(adiosy_platform
     Private/Graphic/AdVKRenderPass.cpp
     Private/Graphic/AdVKFrameBuffer.cpp
     Private/Graphic/AdVKImageView.cpp
+    Private/Graphic/AdVKPipeline.cpp
+    Private/Graphic/AdVKCommandBuffer.cpp
     )
 
 

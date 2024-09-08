@@ -4,6 +4,7 @@
 #include "Graphic/AdVKCommon.h"
 #include "Graphic/AdVKGraphicContext.h"
 #include "Graphic/AdVKQueue.h"
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -131,9 +132,20 @@ namespace ade {
         mPresentQueues.push_back(std::make_shared<AdVKQueue>(presentQueueFamilyInfo.queueFamilyIndex, i, queue, true));
       }
 
+      CreatePipelineCache();
     }
     AdVKDevice::~AdVKDevice(){
         vkDeviceWaitIdle(mHandle);
+        VK_D(PipelineCache, mHandle, mPipelineCache);
         vkDestroyDevice(mHandle, nullptr);
+    }
+
+    void AdVKDevice::CreatePipelineCache() {
+      VkPipelineCacheCreateInfo pipelineCacheInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0
+      };
+      CALL_VK(vkCreatePipelineCache(mHandle, &pipelineCacheInfo, nullptr, &mPipelineCache));
     }
 }

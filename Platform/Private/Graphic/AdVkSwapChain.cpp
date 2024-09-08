@@ -3,10 +3,9 @@
 #include "Graphic/AdVKCommon.h"
 #include "Graphic/AdVKDevice.h"
 #include "Graphic/AdVKGraphicContext.h"
+#include "Graphic/AdVKQueue.h"
 #include <cstdint>
-#include <vector>
 #include <vulkan/vulkan_core.h>
-
 
 namespace ade {
   AdVKSwapChain::AdVKSwapChain(AdVKGraphicContext *context, AdVKDevice *device):mContext(context), mDevice(device){
@@ -156,5 +155,25 @@ namespace ade {
 
     }
 
+  }  
+
+  int32_t AdVKSwapChain::AcquireImage() const {
+    uint32_t imageIndex;
+    CALL_VK(vkAcquireNextImageKHR(mDevice->GetHandle(), mHandle, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex));
+    return imageIndex;
+  }
+
+  void AdVKSwapChain::Present(int32_t imageIndex) const{
+    VkPresentInfoKHR presentInfo = {
+      .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+      .pNext = nullptr,
+      .waitSemaphoreCount = 0,
+      .pWaitSemaphores = nullptr,
+      .swapchainCount = 1,
+      .pSwapchains = &mHandle,
+      .pImageIndices = reinterpret_cast<const uint32_t *>(&imageIndex)
+    };
+    CALL_VK(vkQueuePresentKHR(mDevice->GetFirstPresentQueue()->GetHandle(), &presentInfo));
+    mDevice->GetFirstPresentQueue()->WaitIdle();
   }
 }

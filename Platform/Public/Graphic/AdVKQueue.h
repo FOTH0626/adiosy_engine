@@ -2,8 +2,9 @@
 #define AD_VK_QUEUE_H
 
 #include "AdVKCommon.h"
-#include <cstdint>
-#include <vulkan/vulkan_core.h>
+
+
+
 
 namespace ade {
   class AdVKQueue {
@@ -12,10 +13,13 @@ namespace ade {
       ~AdVKQueue() = default;
 
       void WaitIdle() const;
+      VkQueue GetHandle() const {return mHandle;}
+
+      void Submit(std::vector<VkCommandBuffer> cmdBuffers);
     private:
       std::uint32_t mFamilyIndex;
       std::uint32_t mIndex;
-      VkQueue mQueue;
+      VkQueue mHandle;
       bool canPresent;
   };
 }

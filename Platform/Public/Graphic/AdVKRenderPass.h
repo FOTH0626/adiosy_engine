@@ -5,8 +5,10 @@
 #include "AdVKCommon.h"
 
 
+
 namespace ade {
   class AdVKDevice;
+  class AdVKFrameBuffer;
 
   struct Attachment{
     int32_t ref = -1;
@@ -25,7 +27,10 @@ namespace ade {
       explicit AdVKRenderPass(AdVKDevice *device, const std::vector<VkAttachmentDescription> &attachments = {}, const std::vector<RenderSubPass> &subPass = {});
       ~AdVKRenderPass();
 
-      VkRenderPass GetHandle() const {return mHandle;}
+      [[nodiscard]] VkRenderPass GetHandle() const {return mHandle;}
+
+      void Begin(VkCommandBuffer cmdBuffer, AdVKFrameBuffer *frameBuffer, const std::vector<VkClearValue> &clearValues) const;
+      void End(VkCommandBuffer cmdBuffer) const;
     private:
       VkRenderPass mHandle = VK_NULL_HANDLE;
       AdVKDevice *mDevice;

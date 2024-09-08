@@ -6,6 +6,7 @@
 
 
 
+
 namespace ade {
 
   class AdVKGraphicContext;
@@ -25,13 +26,23 @@ namespace ade {
       VkDevice GetHandle() const {return mHandle;}
 
       const AdVkSettings &GetSettings() const {return mSettings;}
+      VkPipelineCache GetPipelineCache() const {return mPipelineCache;}
+      AdVKQueue* GetGraphicQueue(uint32_t index) const { return mGraphicQueues.size() < index + 1 ? nullptr : mGraphicQueues[index].get(); };
+      AdVKQueue* GetFirstGraphicQueue() const { return mGraphicQueues.empty() ? nullptr : mGraphicQueues[0].get(); };
+      AdVKQueue* GetPresentQueue(uint32_t index) const { return mPresentQueues.size() < index + 1 ? nullptr : mPresentQueues[index].get(); };
+      AdVKQueue* GetFirstPresentQueue() const { return mPresentQueues.empty() ? nullptr : mPresentQueues[0].get(); };
+
     private:
+      void CreatePipelineCache();
+
       VkDevice mHandle = VK_NULL_HANDLE;
 
       std::vector<std::shared_ptr<AdVKQueue>> mGraphicQueues;
       std::vector<std::shared_ptr<AdVKQueue>> mPresentQueues;
       
       AdVkSettings mSettings;
+
+      VkPipelineCache mPipelineCache = VK_NULL_HANDLE;
   };
 }
 

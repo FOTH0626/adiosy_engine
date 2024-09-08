@@ -25,6 +25,9 @@ namespace ade {
 
       bool ReCreate();
 
+      int32_t AcquireImage() const;
+      void Present(int32_t imageIndex) const;
+
       const std::vector<VkImage> &GetImages() const {return mImages;}
       uint32_t GetWidth() const {return mSurfaceInfo.capabilities.currentExtent.width;}
       uint32_t GetHeight() const {return mSurfaceInfo.capabilities.currentExtent.height;}

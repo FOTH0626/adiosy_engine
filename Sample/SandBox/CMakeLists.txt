@@ -1,8 +1,21 @@
 cmake_minimum_required(VERSION 3.15)
 
 
+set(SHADERS 
+      00_hello_triangle.vert
+      00_hello_triangle.frag
+)
+spirv_shaders(
+      SHADER_HEADERS
+      SPIRV_VERSION
+      1.0 #vulkan 1.0
+      SOURCES
+      ${SHADERS}
+)
 
-add_executable(SandBox 
+
+add_executable(SandBox
+${SHADER_HEADERS}
 Main.cpp)
 
 find_package(fmt REQUIRED)
